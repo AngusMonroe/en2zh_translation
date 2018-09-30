@@ -44,7 +44,9 @@ def train(e, model, optimizer, train_iter, vocab_size, grad_clip, DE, EN):
     model.train()
     total_loss = 0
     pad = EN.vocab.stoi['<pad>']
+    print(train_iter)
     for b, batch in enumerate(train_iter):
+        print(batch)
         src, len_src = batch.src
         trg, len_trg = batch.trg
         src, trg = src.cuda(), trg.cuda()
