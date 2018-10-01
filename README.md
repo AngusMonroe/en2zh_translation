@@ -8,7 +8,7 @@ This implementation focuses on the following features:
 - Minimal code for readability
 - Full utilization of batches and GPU.
 
-This implementation relies on [torchtext](https://github.com/pytorch/text) to minimize dataset management and preprocessing parts.
+This implementation also use BLEU, NIST score and TER to evaluate the effect of the model.
 
 ## Model description
 
@@ -27,13 +27,6 @@ This implementation relies on [torchtext](https://github.com/pytorch/text) to mi
 * Spacy
 * numpy
 * Visdom (optional)
-
-download tokenizers by doing so:
-```
-sudo python3 -m spacy download de
-sudo python3 -m spacy download en
-```
-
 
 ## References
 
