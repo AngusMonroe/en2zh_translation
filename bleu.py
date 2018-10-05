@@ -120,7 +120,7 @@ def BLEU(candidate, references):
 
 if __name__ == "__main__":
     # candidate, references = fetch_data(sys.argv[1], sys.argv[2])
-    candidate, references = fetch_data('bleu_data/candidate.txt', 'bleu_data/reference.txt')
+    candidate, references = fetch_data('bleu_data/tst.txt', 'bleu_data/ref.txt')
     bleu = BLEU(candidate, references)
     print(bleu)
     out = open('bleu_data/bleu_out.txt', 'w', encoding='utf8')
