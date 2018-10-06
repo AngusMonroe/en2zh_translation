@@ -18,6 +18,21 @@ This implementation also use BLEU, NIST score and TER to evaluate the effect of 
 
 ![](http://www.wildml.com/wp-content/uploads/2015/12/Screen-Shot-2015-12-30-at-1.16.08-PM.png)
 
+## Metric
+
+- BLUE
+- NIST
+- TER
+- METEOR
+
+```
+perl mteval-v13a.pl -r example/ref.xml -s example/src.xml -t example/tst.xml
+```
+
+Use `xml_transform.py` to transorm sentence txt to xml file.
+
+reference: [https://blog.csdn.net/angus_monroe/article/details/82943162](https://blog.csdn.net/angus_monroe/article/details/82943162)
+
 ## Requirements
 
 * GPU & CUDA
