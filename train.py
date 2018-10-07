@@ -67,7 +67,7 @@ def train(e, model, optimizer, train_iter, vocab_size, grad_clip, DE, EN):
             total_loss = 0
 
 
-def main():
+def main(debug=True):
     args = parse_arguments()
     hidden_size = 512
     embed_size = 256
@@ -75,6 +75,17 @@ def main():
 
     print("[!] preparing dataset...")
     train_iter, val_iter, test_iter, DE, EN = load_dataset(args.batch_size)
+
+    if debug:
+        batches = list(train_iter)
+        first_batch = batches[0]
+        src, len_src = first_batch.src
+        trg, len_trg = first_batch.trg
+        sentence = src[12]
+        print(sentence)
+        print(' '.join(EN.vocab.itos[index.item()] for index in sentence))
+        raise Exception("Stop!")
+
     de_size, en_size = len(DE.vocab), len(EN.vocab)
     print("[TRAIN]:%d (dataset:%d)\t[TEST]:%d (dataset:%d)"
           % (len(train_iter), len(train_iter.dataset),
