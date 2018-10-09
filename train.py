@@ -4,10 +4,14 @@ import argparse
 import torch
 from torch import optim
 from torch.autograd import Variable
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 from torch.nn import functional as F
 from model import Encoder, Decoder, Seq2Seq
 from utils import load_dataset
+
+
+def get_time_str():
+    return datetime.datetime.now().strftime('%Y-%m-%dT%H_%M')
 
 
 def parse_arguments():
@@ -23,40 +27,40 @@ def parse_arguments():
     return p.parse_args()
 
 
-def evaluate(model, val_iter, vocab_size, DE, EN):
+def evaluate(model, val_iter, ZH_vocab_size, EN, ZH):
     model.eval()
-    pad = EN.vocab.stoi['<pad>']
+    pad = ZH.vocab.stoi['<pad>']
     total_loss = 0
     for b, batch in enumerate(val_iter):
         src, len_src = batch.src
         trg, len_trg = batch.trg
-        src = Variable(src.data.cuda(), volatile=True)
-        trg = Variable(trg.data.cuda(), volatile=True)
+        with torch.no_grad():
+            src = Variable(src.data.cuda())
+            trg = Variable(trg.data.cuda())
         output = model(src, trg, teacher_forcing_ratio=0.0)
-        loss = F.nll_loss(output[1:].view(-1, vocab_size),
-                               trg[1:].contiguous().view(-1),
-                               ignore_index=pad)
+        loss = F.nll_loss(output[1:].view(-1, ZH_vocab_size),
+                          trg[1:].contiguous().view(-1),
+                          ignore_index=pad)
         total_loss += loss.data[0]
     return total_loss / len(val_iter)
 
 
-def train(e, model, optimizer, train_iter, vocab_size, grad_clip, DE, EN):
+def train(e, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH):
     model.train()
     total_loss = 0
-    pad = EN.vocab.stoi['<pad>']
-    print(train_iter)
+    pad = ZH.vocab.stoi['<pad>']
     for b, batch in enumerate(train_iter):
         print(batch)
         src, len_src = batch.src
         trg, len_trg = batch.trg
-        src, trg = src.cuda(), trg.cuda()
+        src, trg = src.cuda(), trg.cuda()   # trg: (max_seq_len, batch_size)
         optimizer.zero_grad()
-        output = model(src, trg)
-        loss = F.nll_loss(output[1:].view(-1, vocab_size),
-                               trg[1:].contiguous().view(-1),
-                               ignore_index=pad)
+        output = model(src, trg)    # (max_seq_len, batch_size, ZH_vocab_size)
+        loss = F.nll_loss(output[1:].view(-1, ZH_vocab_size),   # remove '<sos>' using [1:]
+                          trg[1:].contiguous().view(-1),
+                          ignore_index=pad)
         loss.backward()
-        clip_grad_norm(model.parameters(), grad_clip)
+        clip_grad_norm_(model.parameters(), grad_clip)
         optimizer.step()
         total_loss += loss.data[0]
 
@@ -74,50 +78,38 @@ def main(debug=True):
     assert torch.cuda.is_available()
 
     print("[!] preparing dataset...")
-    train_iter, val_iter, test_iter, DE, EN = load_dataset(args.batch_size)
+    train_iter, val_iter, ZH, EN = load_dataset(args.batch_size)
 
-    if debug:
-        batches = list(train_iter)
-        first_batch = batches[0]
-        src, len_src = first_batch.src
-        trg, len_trg = first_batch.trg
-        sentence = src[12]
-        print(sentence)
-        print(' '.join(EN.vocab.itos[index.item()] for index in sentence))
-        raise Exception("Stop!")
-
-    de_size, en_size = len(DE.vocab), len(EN.vocab)
-    print("[TRAIN]:%d (dataset:%d)\t[TEST]:%d (dataset:%d)"
+    en_vocab_size, zh_vocab_size = len(EN.vocab), len(ZH.vocab)
+    print("[TRAIN]:%d (dataset:%d)\t[VALIDATION]:%d (dataset:%d)"
           % (len(train_iter), len(train_iter.dataset),
-             len(test_iter), len(test_iter.dataset)))
-    print("[DE_vocab]:%d [en_vocab]:%d" % (de_size, en_size))
+             len(val_iter), len(val_iter.dataset)))
+    print("[EN_vocab]:%d [ZH_vocab]:%d" % (en_vocab_size, zh_vocab_size))
 
     print("[!] Instantiating models...")
-    encoder = Encoder(de_size, embed_size, hidden_size,
+    encoder = Encoder(en_vocab_size, embed_size, hidden_size,
                       n_layers=2, dropout=0.5)
-    decoder = Decoder(embed_size, hidden_size, en_size,
+    decoder = Decoder(embed_size, hidden_size, zh_vocab_size,
                       n_layers=1, dropout=0.5)
     seq2seq = Seq2Seq(encoder, decoder).cuda()
     optimizer = optim.Adam(seq2seq.parameters(), lr=args.lr)
     print(seq2seq)
 
-    best_val_loss = None
     for e in range(1, args.epochs+1):
         train(e, seq2seq, optimizer, train_iter,
-              en_size, args.grad_clip, DE, EN)
-        val_loss = evaluate(seq2seq, val_iter, en_size, DE, EN)
+              zh_vocab_size, args.grad_clip, EN, ZH)
+        val_loss = evaluate(seq2seq, val_iter, zh_vocab_size, EN, ZH)
         print("[Epoch:%d] val_loss:%5.3f | val_pp:%5.2fS"
               % (e, val_loss, math.exp(val_loss)))
 
-        # Save the model if the validation loss is the best we've seen so far.
-        if not best_val_loss or val_loss < best_val_loss:
+        if epoch % 10 == 0:
             print("[!] saving model...")
             if not os.path.isdir(".save"):
                 os.makedirs(".save")
-            torch.save(seq2seq.state_dict(), './.save/seq2seq_%d.pt' % (e))
-            best_val_loss = val_loss
-    test_loss = evaluate(seq2seq, test_iter, en_size, DE, EN)
-    print("[TEST] loss:%5.2f" % test_loss)
+            save_path = './.save/%s_seq2seq_%d.pt' % (get_time_str(), epoch)
+            torch.save(seq2seq.state_dict(), save_path)
+    # test_loss = evaluate(seq2seq, test_iter, zh_vocab_size, EN, ZH)
+    # print("[TEST] loss:%5.2f" % test_loss)
 
 
 if __name__ == "__main__":
