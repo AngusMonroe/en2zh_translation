@@ -41,18 +41,26 @@ def evaluate(model, val_iter, ZH_vocab_size, EN, ZH):
         loss = F.nll_loss(output[1:].view(-1, ZH_vocab_size),
                           trg[1:].contiguous().view(-1),
                           ignore_index=pad)
-        total_loss += loss.data[0]
+        total_loss += loss.data.item()
     return total_loss / len(val_iter)
 
 
-def train(e, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH):
+def train(e, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH, show_detail=False):
     model.train()
     total_loss = 0
     pad = ZH.vocab.stoi['<pad>']
     for b, batch in enumerate(train_iter):
-        print(batch)
         src, len_src = batch.src
         trg, len_trg = batch.trg
+
+        if show_detail:
+            for i in range(src.size(1)):
+                print('len=%d\t' % len_src[i], ' '.join(token for token in [
+                      EN.vocab.itos[index.item()] for index in src[:, i]] if token != '<pad>'))
+            for i in range(trg.size(1)):
+                print('len=%d\t' % len_trg[i], ' '.join(token for token in [
+                      ZH.vocab.itos[index.item()] for index in trg[:, i]] if token != '<pad>'))
+
         src, trg = src.cuda(), trg.cuda()   # trg: (max_seq_len, batch_size)
         optimizer.zero_grad()
         output = model(src, trg)    # (max_seq_len, batch_size, ZH_vocab_size)
@@ -62,7 +70,7 @@ def train(e, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH):
         loss.backward()
         clip_grad_norm_(model.parameters(), grad_clip)
         optimizer.step()
-        total_loss += loss.data[0]
+        total_loss += loss.data.item()
 
         if b % 100 == 0 and b != 0:
             total_loss = total_loss / 100
@@ -71,7 +79,7 @@ def train(e, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH):
             total_loss = 0
 
 
-def main(debug=True):
+def main(debug=True, show_detail=False):
     args = parse_arguments()
     hidden_size = 512
     embed_size = 256
@@ -97,7 +105,7 @@ def main(debug=True):
 
     for e in range(1, args.epochs+1):
         train(e, seq2seq, optimizer, train_iter,
-              zh_vocab_size, args.grad_clip, EN, ZH)
+              zh_vocab_size, args.grad_clip, EN, ZH, show_detail=show_detail)
         val_loss = evaluate(seq2seq, val_iter, zh_vocab_size, EN, ZH)
         print("[Epoch:%d] val_loss:%5.3f | val_pp:%5.2fS"
               % (e, val_loss, math.exp(val_loss)))
@@ -114,6 +122,6 @@ def main(debug=True):
 
 if __name__ == "__main__":
     try:
-        main()
+        main(debug=True, show_detail=False)
     except KeyboardInterrupt as e:
         print("[STOP]", e)
