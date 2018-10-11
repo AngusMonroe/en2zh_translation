@@ -45,7 +45,7 @@ def evaluate(model, val_iter, ZH_vocab_size, EN, ZH):
     return total_loss / len(val_iter)
 
 
-def train(e, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH, show_detail=False):
+def train(epoch, model, optimizer, train_iter, ZH_vocab_size, grad_clip, EN, ZH, show_detail=False):
     model.train()
     total_loss = 0
     pad = ZH.vocab.stoi['<pad>']
@@ -103,12 +103,12 @@ def main(debug=True, show_detail=False):
     optimizer = optim.Adam(seq2seq.parameters(), lr=args.lr)
     print(seq2seq)
 
-    for e in range(1, args.epochs+1):
-        train(e, seq2seq, optimizer, train_iter,
+    for epoch in range(1, args.epochs+1):
+        train(epoch, seq2seq, optimizer, train_iter,
               zh_vocab_size, args.grad_clip, EN, ZH, show_detail=show_detail)
         val_loss = evaluate(seq2seq, val_iter, zh_vocab_size, EN, ZH)
         print("[Epoch:%d] val_loss:%5.3f | val_pp:%5.2fS"
-              % (e, val_loss, math.exp(val_loss)))
+              % (epoch, val_loss, math.exp(val_loss)))
 
         if epoch % 10 == 0:
             print("[!] saving model...")
@@ -123,5 +123,5 @@ def main(debug=True, show_detail=False):
 if __name__ == "__main__":
     try:
         main(debug=True, show_detail=False)
-    except KeyboardInterrupt as e:
-        print("[STOP]", e)
+    except KeyboardInterrupt as epoch:
+        print("[STOP]", epoch)

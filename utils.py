@@ -1,18 +1,19 @@
 import re
 import spacy
+import pickle
 from bs4 import BeautifulSoup
+from os import path
 import jieba
 from torchtext.data import Field, BucketIterator, interleave_keys, Dataset
 from torchtext.datasets.translation import TranslationDataset
 
-train_sentence_path = '../Data/train_sentences_10000.en-zh'
-val_sentence_path = '../Data/validation_sentences_8000.en-zh'
-
-# train_file  = '../Data/ai_challenger_MTEnglishtoChinese_trainingset_20180827.txt'
-train_file = '../Data/first_10000_training_samples.txt'
-val_en_file = '../Data/ai_challenger_MTEnglishtoChinese_validationset_20180823_en.sgm'
-val_zh_file = '../Data/ai_challenger_MTEnglishtoChinese_validationset_20180823_zh.sgm'
-test_en_file = '../Data/ai_challenger_MTEnglishtoChinese_testA_20180827_en.sgm'
+data_path = '../Data/'
+train_set_size = 10000
+val_set_size = 8000
+train_sentence_path = path.join(
+    data_path, 'train_sentences_%d00.en-zh' % train_set_size)
+val_sentence_path = path.join(
+    data_path, 'validation_sentences_%d.en-zh' % val_set_size)
 
 
 def load_dataset(batch_size, debug=True):
@@ -43,6 +44,15 @@ def load_dataset(batch_size, debug=True):
     EN.build_vocab(train_dataset.src, min_freq=2)
     ZH.build_vocab(train_dataset.trg, max_size=100000)
     print('Vocabularies Built!')
+
+    en_field_path = os.path(data_path, 'train_%d_val_%d_field_en')
+    zh_field_path = os.path(data_path, 'train_%d_val_%d_field_zh')
+    try:
+        pickle.dump(EN, open(en_field_path, 'wb'))
+        pickle.dump(ZH, open(zh_field_path, 'wb'))
+    except OSError as e:
+        print('OS Error, while storing en and zh Vocabularies')
+        print(e)
 
     train_iter, val_iter = BucketIterator.splits(
         (train_dataset, val_dataset), batch_size=batch_size, repeat=False, sort_key=lambda x: interleave_keys(len(x.src), len(x.trg)))
