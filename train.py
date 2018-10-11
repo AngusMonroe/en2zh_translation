@@ -25,6 +25,10 @@ def parse_arguments():
                    help='initial learning rate')
     p.add_argument('-grad_clip', type=float, default=10.0,
                    help='initial learning rate')
+    p.add_argument('-train_maxsize', type=int, default=100000,
+                   help='max training set size')
+    p.add_argument('-val_maxsize', type=int, default=8000,
+                   help='max validation set size, default is 8000 (using the whole)')
     return p.parse_args()
 
 
@@ -87,7 +91,8 @@ def main(debug=True, show_detail=False):
     assert torch.cuda.is_available()
 
     print("[!] preparing dataset...")
-    train_iter, val_iter, ZH, EN = load_dataset(args.batch_size)
+    train_iter, val_iter, ZH, EN = load_dataset(
+        args.batch_size, args.train_maxsize, args.val_maxsize)
 
     en_vocab_size, zh_vocab_size = len(EN.vocab), len(ZH.vocab)
     print("[TRAIN]:%d (dataset:%d)\t[VALIDATION]:%d (dataset:%d)"
@@ -111,12 +116,12 @@ def main(debug=True, show_detail=False):
         print("[Epoch:%d] val_loss:%5.3f | val_pp:%5.2fS"
               % (epoch, val_loss, math.exp(val_loss)))
 
-        if e % 10 == 0:
+        if epoch % 10 == 0:
             print("[!] saving model...")
             if not os.path.isdir(".save"):
                 os.makedirs(".save")
-            save_path = './.save/%s_seq2seq_%d.pt' % (get_time_str(), e)
-            torch.save(seq2seq.state_dict(), save_path)
+            save_path = './.save/%s_seq2seq_%d.pt' % (get_time_str(), epoch)
+            torch.save(seq2seq, save_path)
     # test_loss = evaluate(seq2seq, test_iter, zh_vocab_size, EN, ZH)
     # print("[TEST] loss:%5.2f" % test_loss)
 

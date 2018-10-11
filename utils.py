@@ -8,15 +8,11 @@ from torchtext.data import Field, BucketIterator, interleave_keys, Dataset
 from torchtext.datasets.translation import TranslationDataset
 
 data_path = '../Data/'
-train_set_size = 10000
-val_set_size = 8000
-train_sentence_path = path.join(
-    data_path, 'train_sentences_%d00.en-zh' % train_set_size)
-val_sentence_path = path.join(
-    data_path, 'validation_sentences_%d.en-zh' % val_set_size)
+train_sentence_path = path.join(data_path, 'train_sentences_%d00.en-zh')
+val_sentence_path = path.join(data_path, 'validation_sentences_%d.en-zh')
 
 
-def load_dataset(batch_size, debug=True):
+def load_dataset(batch_size, train_maxsize, val_maxsize, debug=True):
     spacy_en = spacy.load('en')
 
     def tokenize_en(line):
@@ -36,17 +32,19 @@ def load_dataset(batch_size, debug=True):
         ('trg', ZH)
     ]
     train_dataset = TranslationDataset(
-        train_sentence_path, exts=exts, fields=fields)
+        train_sentence_path % train_maxsize, exts=exts, fields=fields)
     val_dataset = TranslationDataset(
-        val_sentence_path, exts=exts, fields=fields)
+        val_sentence_path % val_maxsize, exts=exts, fields=fields)
     print('Datasets Built!')
 
     EN.build_vocab(train_dataset.src, min_freq=2)
     ZH.build_vocab(train_dataset.trg, max_size=100000)
     print('Vocabularies Built!')
 
-    en_field_path = os.path(data_path, 'train_%d_val_%d_field_en')
-    zh_field_path = os.path(data_path, 'train_%d_val_%d_field_zh')
+    en_field_path = os.path(data_path, 'train_%d_val_%d_field_en') % (
+        train_maxsize, val_maxsize)
+    zh_field_path = os.path(data_path, 'train_%d_val_%d_field_zh') % (
+        train_maxsize, val_maxsize)
     try:
         pickle.dump(EN, open(en_field_path, 'wb'))
         pickle.dump(ZH, open(zh_field_path, 'wb'))
