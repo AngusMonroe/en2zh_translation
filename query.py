@@ -54,6 +54,8 @@ def evaluate(model, val_iter):
     for b, batch in enumerate(val_iter):
         src, len_src = batch.src
         trg, len_trg = batch.trg
+    #  src, len_src = val_iter.src
+    # trg, len_trg = val_iter.trg
         with torch.no_grad():
             src = Variable(src.data.cuda())
             trg = Variable(trg.data.cuda())
@@ -70,18 +72,19 @@ def query():
     val_iter, ZH, EN = load_dataset(batch_size=1)
 
     en_vocab_size, zh_vocab_size = len(EN.vocab), len(ZH.vocab)
-    print("[VALIDATION]:%d (dataset:%d)"
-          % (len(val_iter), len(val_iter.dataset)))
+    # print("[VALIDATION]:%d (dataset:%d)"
+    #       % (len(val_iter), len(val_iter.dataset)))
     print("[EN_vocab]:%d [ZH_vocab]:%d" % (en_vocab_size, zh_vocab_size))
 
     print("[!] Instantiating models...")
-    encoder = Encoder(en_vocab_size, embed_size, hidden_size,
-                      n_layers=2, dropout=0.5)
-    decoder = Decoder(embed_size, hidden_size, zh_vocab_size,
-                      n_layers=1, dropout=0.5)
-    seq2seq = Seq2Seq(encoder, decoder).cpu()
-    seq2seq.load_state_dict(torch.load('.save/2018-10-09T05_53_seq2seq_100.pt'))
+    # encoder = Encoder(en_vocab_size, embed_size, hidden_size,
+    #                   n_layers=2, dropout=0.5)
+    # decoder = Decoder(embed_size, hidden_size, zh_vocab_size,
+    #                   n_layers=1, dropout=0.5)
+    # seq2seq = Seq2Seq(encoder, decoder).cpu()
+    # seq2seq.load('.save/2018-10-20T05_11_seq2seq_100.ml')
     # # optimizer = optim.Adam(seq2seq.parameters(), lr=args.lr)
+    seq2seq = torch.load('.save/2018-10-20T05_11_seq2seq_100.ml')
     print(seq2seq)
 
     return evaluate(seq2seq, val_iter)
