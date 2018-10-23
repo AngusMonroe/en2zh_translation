@@ -53,6 +53,8 @@ def evaluate(model, val_iter):
     for b, batch in enumerate(val_iter):
         src, len_src = batch.src
         trg, len_trg = batch.trg
+    #  src, len_src = val_iter.src
+    # trg, len_trg = val_iter.trg
         with torch.no_grad():
             src = Variable(src.data.cuda())
             trg = Variable(trg.data.cuda())
