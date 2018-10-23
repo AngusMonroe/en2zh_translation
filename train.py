@@ -109,6 +109,7 @@ def main(debug=True, show_detail=False):
     optimizer = optim.Adam(seq2seq.parameters(), lr=args.lr)
     print(seq2seq)
 
+    time_str = get_time_str()
     for epoch in range(1, args.epochs+1):
         train(epoch, seq2seq, optimizer, train_iter,
               zh_vocab_size, args.grad_clip, EN, ZH, show_detail=show_detail)
@@ -120,7 +121,7 @@ def main(debug=True, show_detail=False):
             print("[!] saving model...")
             if not os.path.isdir(".save"):
                 os.makedirs(".save")
-            save_path = './.save/%s_seq2seq_%d.pt' % (get_time_str(), epoch)
+            save_path = './.save/%s_seq2seq_%d.pt' % (time_str, epoch)
             torch.save(seq2seq, save_path)
     # test_loss = evaluate(seq2seq, test_iter, zh_vocab_size, EN, ZH)
     # print("[TEST] loss:%5.2f" % test_loss)

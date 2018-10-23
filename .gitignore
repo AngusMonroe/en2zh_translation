@@ -110,3 +110,4 @@ venv.bak/
 xml_data
 Data
 .save
+*.ipynb
