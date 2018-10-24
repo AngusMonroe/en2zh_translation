@@ -13,7 +13,7 @@ train_sentence_path = path.join(data_path, 'train_sentences_%d.en-zh')
 val_sentence_path = path.join(data_path, 'validation_sentences_%d.en-zh')
 
 
-def load_dataset(batch_size, train_maxsize, val_maxsize, debug=True):
+def load_dataset(batch_size, train_maxsize, val_maxsize, debug=True, shuffle_dataset=True):
     spacy_en = spacy.load('en')
 
     def tokenize_en(line):
@@ -57,14 +57,14 @@ def load_dataset(batch_size, train_maxsize, val_maxsize, debug=True):
 
     # first parameter should be a iterable object, and the return result will have same len with it
     train_iter, val_iter = BucketIterator.splits(
-        (train_dataset, val_dataset), batch_size=batch_size, repeat=False, sort_key=lambda x: interleave_keys(len(x.src), len(x.trg)))
+        (train_dataset, val_dataset), shuffle=shuffle_dataset, batch_size=batch_size, repeat=False, sort_key=lambda x: interleave_keys(len(x.src), len(x.trg)))
     print('Training Iterators Built!')
     return train_iter, val_iter, ZH, EN
 
 
 if __name__ == '__main__':
     test_batch_size = 64
-    train_iter, *_, EN = load_dataset(test_batch_size, 1000, 1000, True)
+    train_iter, *_, EN = load_dataset(test_batch_size, 1000, 1000, True, False)
     batch = list(train_iter)[0]
     src, len_src = batch.src
     trg, len_trg = batch.trg

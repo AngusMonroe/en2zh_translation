@@ -13,7 +13,7 @@ val_sentence_path = 'Data/validation_sentences_8000.en-zh'
 # print(model)
 
 
-def load_dataset(batch_size, debug=True):
+def load_dataset(batch_size, debug=True, shuffle_dataset=True):
     spacy_en = spacy.load('en')
 
     def tokenize_en(line):
@@ -43,7 +43,7 @@ def load_dataset(batch_size, debug=True):
     print('Vocabularies Built!')
 
     val_iter, *_ = BucketIterator.splits(
-        (val_dataset, ), batch_size=batch_size, repeat=False, sort_key=lambda x: interleave_keys(len(x.src), len(x.trg)))
+        (val_dataset, ), shuffle=shuffle_dataset, batch_size=batch_size, repeat=False, sort_key=lambda x: interleave_keys(len(x.src), len(x.trg)))
     print('Training Iterators Built!')
     return val_iter, val_dataset, ZH, EN
 
@@ -53,8 +53,6 @@ def evaluate(model, val_iter):
     for b, batch in enumerate(val_iter):
         src, len_src = batch.src
         trg, len_trg = batch.trg
-    #  src, len_src = val_iter.src
-    # trg, len_trg = val_iter.trg
         with torch.no_grad():
             src = Variable(src.data.cuda())
             trg = Variable(trg.data.cuda())
@@ -69,7 +67,7 @@ def query():
     # assert torch.cuda.is_available()
 
     print("[!] preparing dataset...")
-    val_iter, val_dataset, ZH, EN = load_dataset(batch_size=batch_size)
+    val_iter, val_dataset, ZH, EN = load_dataset(batch_size=batch_size, shuffle_dataset=False)
     en_vocab_size, zh_vocab_size = len(EN.vocab), len(ZH.vocab)
     # print("[VALIDATION]:%d (dataset:%d)"
     #       % (len(val_iter), len(val_iter.dataset)))
